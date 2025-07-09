@@ -1,34 +1,49 @@
-// src/components/ChatRoom.jsx
+
 import React, { useEffect, useState, useRef } from "react";
 import { io } from "socket.io-client";
-import Message from "./Message"; // make sure path is correct
+import Message from "./Message"; 
 
-const socket = io("http://localhost:3000"); // Node.js server
+const socket = io("http://localhost:3000"); 
 
-const ChatRoom = ({ username, room }) => {
+const ChatRoom = ({ username, room, setUsername, setRoom, setError }) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const bottomRef = useRef(null);
 
-  // Connect + join room
+  
   useEffect(() => {
     socket.emit("joinRoom", { username, room });
+
+        socket.on("chatHistory", (history) => {
+      setMessages(history);
+    });
 
     socket.on("message", (msg) => {
       setMessages((prev) => [...prev, msg]);
     });
 
+        socket.on("error", (msg) => {
+      alert(msg);
+      if (setUsername && setRoom && setError) {
+        setUsername("");
+        setRoom("");
+        setError(msg);
+      } else {
+        window.location.reload();
+      }
+    });
+
     return () => {
       socket.disconnect();
     };
-  }, [username, room]);
+  }, [username, room ,setUsername, setRoom, setError]);
 
-  // Auto scroll to bottom
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Send message
+
   const sendMessage = () => {
     if (message.trim()) {
       socket.emit("chatMessage", { username, room, message });
